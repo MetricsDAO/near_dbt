@@ -39,10 +39,14 @@ models:
         description: Amount of NEAR approved for use in unadjusted format (10^24). NULL if permission is FullAccess.
 
       - name: method_name
-        description: Name of the method(s) approved for use. NULL if permission is FullAccess.
+        description: Name of the method(s) approved for use. NULL if permission is FullAccess. REMINDER - added not null test to trigger failure
+        tests:
+          - not_null
 
       - name: receiver_id
-        description: the account ID of the destination of this transaction. NULL if permission is FullAccess.
+        description: the account ID of the destination of this transaction. NULL if permission is FullAccess. REMINDER - added not null test to trigger failure
+        tests:
+          - not_null
 
       - name: ingested_at
         description: The timestamp for when the block was ingested.
