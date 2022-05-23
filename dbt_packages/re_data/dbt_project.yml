@@ -1,0 +1,56 @@
+name: "re_data"
+version: "0.8.0"
+config-version: 2
+
+require-dbt-version: [">=1.0.0", "<1.2.0"]
+
+profile: "re_data_postgres"
+
+target-path: "target" # directory which will store compiled SQL files
+clean-targets: ["target", "dbt_modules", "dbt_packages"]
+
+on-run-end:
+  - "{% if var('re_data:save_test_history') %} {{ re_data.save_test_history(results) }} {% endif %}"
+
+vars:
+  re_data:max_columns_in_query: 10
+  re_data:time_window_end: '{{ run_started_at.strftime("%Y-%m-%d 00:00:00") }}'
+  re_data:time_window_start: '{{ (run_started_at - modules.datetime.timedelta(1)).strftime("%Y-%m-%d 00:00:00") }}'
+  re_data:anomaly_detection_look_back_days: 30
+
+  re_data:alerting_z_score: 3
+
+  re_data:save_test_history: false
+
+  re_data:anomaly_detector:
+    name: modified_z_score
+    threshold: 3
+
+  re_data:metrics_base:
+    table:
+      - row_count
+      - freshness
+
+    column:
+      numeric:
+        - min
+        - max
+        - avg
+        - stddev
+        - variance
+        - nulls_count
+        - nulls_percent
+      text:
+        - min_length
+        - max_length
+        - avg_length
+        - nulls_count
+        - missing_count
+        - nulls_percent
+        - missing_percent
+
+models:
+  re_data:
+    +schema: re
+    internal:
+      +schema: re_internal

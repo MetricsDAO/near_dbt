@@ -1,0 +1,11 @@
+*.pyc
+*.egg-info
+.DS_Store
+.vscode
+.python-version
+venv
+.idea/
+logs/*
+dbt_modules/*
+dbt_packages/*
+target/*

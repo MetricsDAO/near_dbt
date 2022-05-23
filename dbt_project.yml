@@ -6,7 +6,7 @@ version: "1.0.0"
 config-version: 2
 
 # This setting configures which "profile" dbt uses for this project.
-profile: "default"
+profile: "near_dbt"
 
 # These configurations specify where dbt should look for different types of files.
 # The `source-paths` config, for example, states that models in this project can be
@@ -22,6 +22,7 @@ target-path: "target" # directory which will store compiled SQL files
 clean-targets: # directories to be removed by `dbt clean`
   - "target"
   - "dbt_modules"
+  - "dbt_packages"
 
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
@@ -31,9 +32,24 @@ clean-targets: # directories to be removed by `dbt clean`
 # using the `{{ config(...) }}` macro.
 models:
   near:
+    +re_data_monitored: true
+    # +re_data_time_filter: block_timestamp
     # # Config indicated by + and applies to all files under models/example/
     # example:
     #   +materialized: view
 
+sources:
+  near:
+    chainwalkers:
+      near_blocks:
+        +re_data_monitored: true
+        +re_data_time_filter: ingested_at
+      near_txs:
+        +re_data_monitored: true
+        +re_data_time_filter: ingested_at
+
 tests:
   +severity: warn  # all tests
+
+vars:
+  re_data:save_test_history: true
