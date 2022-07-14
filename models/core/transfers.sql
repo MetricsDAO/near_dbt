@@ -17,38 +17,68 @@ WITH action_events AS(
     action_name = 'Transfer'
     AND {{ incremental_load_filter("ingested_at") }}
 ),
-actions AS (
+txs AS (
   SELECT
-    t.txn_hash,
-    A.action_id,
-    t.block_timestamp,
-    t.tx_receiver,
-    t.tx_signer,
-    A.deposit,
-    t.transaction_fee,
-    t.gas_used,
-    t.tx_receipt [0] :id :: STRING AS receipt_object_id,
+    txn_hash,
+    tx :receipt AS tx_receipt,
+    block_timestamp,
+    tx_receiver,
+    tx_signer,
+    transaction_fee,
+    gas_used,
     CASE
       WHEN tx_receipt [0] :outcome :status :: STRING = '{"SuccessValue":""}' THEN TRUE
       ELSE FALSE
     END AS status,
-    t.ingested_at
+    ingested_at
   FROM
-    {{ ref('transactions') }} AS t
-    INNER JOIN action_events AS A
-    ON A.txn_hash = t.txn_hash
+    {{ ref('transactions') }}
   WHERE
     {{ incremental_load_filter("ingested_at") }}
 ),
-FINAL AS (
+receipts AS (
   SELECT
     txn_hash,
-    action_id,
+    ARRAY_AGG(
+      VALUE :id
+    ) AS receipt_object_id
+  FROM
+    txs,
+    LATERAL FLATTEN(
+      input => tx_receipt
+    )
+  GROUP BY
+    1
+),
+actions AS (
+  SELECT
+    t.txn_hash,
+    r.receipt_object_id,
+    t.block_timestamp,
+    t.tx_receiver,
+    t.tx_signer,
+    t.transaction_fee,
+    t.gas_used,
+    t.status,
+    A.action_id,
+    A.deposit,
+    t.ingested_at
+  FROM
+    txs AS t
+    INNER JOIN receipts AS r
+    ON r.txn_hash = t.txn_hash
+    INNER JOIN action_events AS A
+    ON A.txn_hash = t.txn_hash
+),
+FINAL AS (
+  SELECT
     block_timestamp,
+    txn_hash,
+    action_id,
+    receipt_object_id,
     tx_signer,
     tx_receiver,
     deposit,
-    receipt_object_id,
     transaction_fee,
     gas_used,
     status,
